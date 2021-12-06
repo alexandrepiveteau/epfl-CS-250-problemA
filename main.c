@@ -9,6 +9,15 @@
 // DFS EXPLORATION STACK
 
 /**
+ * A structure which contains the coordinates of the next explored cell. Each cell is determined by its three
+ * coordinates.
+ */
+typedef struct coords {
+  /** The individual coordinates of the dynamic programming table points. */
+  int x, y, z;
+} coords_t;
+
+/**
  * A structure which represents a traversal stack, used when building the dynamic programming array. When building the
  * array, we want to use some heuristics in order to improve performance. Especially, a good heuristic is that the
  * items will generally not be consumed, and that the first path to explore should possibly be to try to go up to the
@@ -19,7 +28,7 @@
  */
 typedef struct dfs_stack {
   size_t offset;
-  int data[3 * MAX_DEPTH_STACK];
+  coords_t data[MAX_DEPTH_STACK];
 } dfs_stack_t;
 
 /**
@@ -28,7 +37,7 @@ typedef struct dfs_stack {
  * @param stack the stack to which an item is added.
  * @param item the item that is pushed.
  */
-inline void dfs_stack_push(dfs_stack_t *stack, int item) {
+static inline void dfs_stack_push(dfs_stack_t *stack, coords_t item) {
   stack->data[stack->offset] = item;
   stack->offset++;
 }
@@ -39,7 +48,7 @@ inline void dfs_stack_push(dfs_stack_t *stack, int item) {
  * @param stack the stack from which the item is popped.
  * @return the item that was just popped.
  */
-inline int dfs_stack_pop(dfs_stack_t *stack) {
+static inline coords_t dfs_stack_pop(dfs_stack_t *stack) {
   stack->offset--;
   return stack->data[stack->offset];
 }
@@ -83,14 +92,13 @@ memo_item_t table[MAX_DEPTH_X][MAX_DEPTH_Y][MAX_DEPTH_Z];
 bool solve(int n, int j, int k, const int prices[n], const int calories[n]) {
 
   // Start at the initial cell, located at the bottom left.
-  dfs_stack_push(&stack, 0);
-  dfs_stack_push(&stack, 0);
-  dfs_stack_push(&stack, 0);
+  dfs_stack_push(&stack, (coords_t) {.x = 0, .y=0, .z=0});
 
   while (stack.offset > 0) {
-    int x = dfs_stack_pop(&stack);
-    int y = dfs_stack_pop(&stack);
-    int z = dfs_stack_pop(&stack);
+    coords_t coords = dfs_stack_pop(&stack);
+    int x = coords.x;
+    int y = coords.y;
+    int z = coords.z;
 
     if (x == n && y == j && z == k) return true;
 
@@ -105,15 +113,11 @@ bool solve(int n, int j, int k, const int prices[n], const int calories[n]) {
       int new_y = y + prices[x];
       int new_z = z + calories[x];
       if (new_y <= j && new_z <= k) {
-        dfs_stack_push(&stack, new_z);
-        dfs_stack_push(&stack, new_y);
-        dfs_stack_push(&stack, new_x);
+        dfs_stack_push(&stack, (coords_t) {.x = new_x, .y = new_y, .z = new_z});
       }
 
       // 2. we decide not to buy any item
-      dfs_stack_push(&stack, z);
-      dfs_stack_push(&stack, y);
-      dfs_stack_push(&stack, new_x);
+      dfs_stack_push(&stack, (coords_t) {.x = new_x, .y = y, .z = z});
     }
 
     table[x][y][z] = BadPath;
